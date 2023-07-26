@@ -49,6 +49,8 @@
 /// ```
 ///
 /// [`Range`]: https://doc.rust-lang.org/std/ops/struct.Range.html
+
+//https://stackoverflow.com/questions/64251852/is-there-a-way-to-check-a-struct-has-a-field-and-check-its-type
 #[macro_export]
 macro_rules! assert_fields_type {
     // ($t:ident::$v:ident: $($f:ident),+) => {
