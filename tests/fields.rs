@@ -30,3 +30,10 @@ use m::Bar as Baz;
 
 assert_fields!(m::Bar<str>: inner, nul);
 assert_fields!(Baz<dyn Send>: inner, nul);
+
+#[allow(dead_code)]
+struct A {
+    x: u32,
+    y: u32,
+}
+assert_fields_type!(A: x: u32, y: u32);
