@@ -122,6 +122,7 @@ mod assert_trait;
 mod assert_type;
 mod const_assert;
 mod does_impl;
+mod assert_function_consumes;
 
 // Utility macros.
 //
