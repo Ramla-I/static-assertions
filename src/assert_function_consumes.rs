@@ -1,4 +1,4 @@
-/// function should always consume a type
+/// function should always consume a type. Only works with function that takes one argument
 
 #[macro_export]
 macro_rules! assert_function_consumes_one {
