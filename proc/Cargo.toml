@@ -23,3 +23,8 @@ maintenance = { status = "passively-maintained" }
 
 [features]
 nightly = []
+
+[dependencies]
+syn = { version = "2.0.68", features = ["full"] }
+proc-macro2 = "1.0.86"
+quote = "1.0.36"

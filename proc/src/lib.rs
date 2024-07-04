@@ -79,14 +79,64 @@
 )]
 #![deny(missing_docs)]
 
+extern crate syn;
+extern crate quote;
 extern crate proc_macro;
-use proc_macro::TokenStream;
 
-/// Statically assert aspects of types, traits, and more.
-///
-/// This currently does nothing. Create an issue if you have ideas for what this
-/// could do!
+mod private_fields;
+mod size_align;
+
+use quote::quote;
+use proc_macro::TokenStream;
+use syn::{parse_macro_input, DeriveInput, ItemStruct};
+
+
+// Define Proc-Macros Below
+// Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
+
+/// A procedural macro to assert that all fields in a struct are private.
+/// 
 #[proc_macro_attribute]
-pub fn assert(_attr: TokenStream, _item: TokenStream) -> TokenStream {
-    TokenStream::new()
+pub fn assert_private_fields(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemStruct);
+    private_fields::assert_private_fields_impl(input)
+}
+
+/// A procedural macro attribute to assert the size and alignment of a struct.
+/// 
+#[proc_macro_attribute]
+pub fn assert_align_size(attr: TokenStream, input: TokenStream) -> TokenStream {
+    // Parse the attribute arguments
+    let size_align = parse_macro_input!(attr as size_align::SizeAlign);
+
+    let size = size_align.size;
+    let align = size_align.align;
+
+    // Parse the input tokens and name
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+
+    // Generate compile-time assertions
+    let generated_code = quote! {
+        #input
+
+        const _: () = {
+            #[test]
+            fn size_of_struct() {
+                let expected_size = #size;
+                let actual_size = std::mem::size_of::<#name>();
+                assert_eq!(expected_size, actual_size, "Struct {} does not have the expected size of {} bytes", stringify!(#name), expected_size);
+            }
+
+            #[test]
+            fn align_of_struct() {
+                let expected_align = #align;
+                let actual_align = std::mem::align_of::<#name>();
+                assert_eq!(expected_align, actual_align, "Struct {} does not have the expected alignment of {} bytes", stringify!(#name), expected_align);
+            }
+        };
+    };
+
+    // Return the generated code as a TokenStream
+    generated_code.into()
 }
