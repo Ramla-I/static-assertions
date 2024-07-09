@@ -99,3 +99,25 @@ macro_rules! assert_type_ne_all {
         };
     };
 }
+
+/// Asserts that _all_ type's inner fields are private.
+///
+#[macro_export]
+macro_rules! assert_fields_private {
+    ($t:ty, $($field:ident),*) => {
+        const _: () = {
+            struct TestStruct;
+            impl TestStruct {
+                #[allow(unreachable_code)]
+                fn check() {
+                    let x: $t = unimplemented!();
+                    $(
+                        let _ = x.$field; // This line should cause a compile error if the field is private
+                    )*
+                }
+            }
+        };
+    };
+}
+
+

@@ -4,7 +4,17 @@
 #[macro_use]
 extern crate static_assertions;
 
-assert_obj_safe!(core::fmt::Debug, Send, Sync);
 
-trait ObjSafe {}
-assert_obj_safe!(ObjSafe);
+mod simple_tests {
+    #[test]
+    fn test_assert_obj_safe() {
+        assert_obj_safe!(core::fmt::Debug, Send, Sync);
+    }
+
+    trait ObjSafe {}
+    
+    #[test]
+    fn test_assert_obj_safe_trait() {
+        assert_obj_safe!(ObjSafe);
+    }
+}

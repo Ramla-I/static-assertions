@@ -19,7 +19,7 @@ pub fn assert_private_fields_impl(input: ItemStruct) -> TokenStream {
         TokenStream::new()
     } else {
         let expanded = quote! {
-            compile_error!("Struct {} has public fields, all fields must be private.", stringify!(#struct_name));
+            compile_error!(concat!("Struct ", stringify!(#struct_name), " has public fields; all fields must be private."));
         };
         TokenStream::from(expanded)
     }

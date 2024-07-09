@@ -21,6 +21,7 @@ optional = true
 members = ["proc"]
 
 [features]
+default = []
 nightly = []
 proc = ["proc_static_assertions"]
 

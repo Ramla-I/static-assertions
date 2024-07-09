@@ -79,64 +79,56 @@
 )]
 #![deny(missing_docs)]
 
-extern crate syn;
+// Procedural macros operate on the abstract syntax tree (AST) of the code.
+// The quote crate helps in constructing these syntax trees. Using `quote`
+// allows us to write code almost as if we're directly writing Rust code,
+// facilitating seamless injection of variables like #input, #size, or #align.
+// Without quote, we would have to manually construct token streams and manage
+// all syntactic intricacies ourselves, which is prone to errors and cumbersome.
 extern crate quote;
 extern crate proc_macro;
+extern crate syn;
 
 mod private_fields;
 mod size_align;
+mod whitelist;
 
-use quote::quote;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput, ItemStruct};
+use syn::{parse_macro_input, DeriveInput, ItemStruct, ItemImpl};
 
 
-// Define Proc-Macros Below
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
+// https://doc.rust-lang.org/book/ch19-06-macros.html#how-to-write-a-custom-derive-macro
 
 /// A procedural macro to assert that all fields in a struct are private.
-/// 
 #[proc_macro_attribute]
 pub fn assert_private_fields(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemStruct);
-    private_fields::assert_private_fields_impl(input)
+
+    private_fields::assert_private_fields_impl(input).into()
 }
 
 /// A procedural macro attribute to assert the size and alignment of a struct.
-/// 
 #[proc_macro_attribute]
-pub fn assert_align_size(attr: TokenStream, input: TokenStream) -> TokenStream {
-    // Parse the attribute arguments
+pub fn assert_align_size(attr: TokenStream, item: TokenStream) -> TokenStream {
+    // The release notes for syn v.2 say that AttributeArgs was removed, 
+    // and says to ither use Punctuated<Meta, Token![,]> or build you own 
+    // parse_macro_input! implementation. Follow the link for an example:
+    // https://docs.rs/syn/latest/syn/meta/fn.parser.html#example
     let size_align = parse_macro_input!(attr as size_align::SizeAlign);
+    let size_align::SizeAlign { size, align } = size_align;
 
-    let size = size_align.size;
-    let align = size_align.align;
+    let input = parse_macro_input!(item as DeriveInput);
 
-    // Parse the input tokens and name
-    let input = parse_macro_input!(input as DeriveInput);
-    let name = &input.ident;
+    size_align::assert_align_size_impl(size, align, &input).into()
+}
 
-    // Generate compile-time assertions
-    let generated_code = quote! {
-        #input
+/// A procedural macro attribute to hold the whitelist of functions.
+/// Checks if a field of a type is only mutated in certain functions.
+#[proc_macro_attribute]
+pub fn whitelist(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemImpl);
+    let args = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-        const _: () = {
-            #[test]
-            fn size_of_struct() {
-                let expected_size = #size;
-                let actual_size = std::mem::size_of::<#name>();
-                assert_eq!(expected_size, actual_size, "Struct {} does not have the expected size of {} bytes", stringify!(#name), expected_size);
-            }
-
-            #[test]
-            fn align_of_struct() {
-                let expected_align = #align;
-                let actual_align = std::mem::align_of::<#name>();
-                assert_eq!(expected_align, actual_align, "Struct {} does not have the expected alignment of {} bytes", stringify!(#name), expected_align);
-            }
-        };
-    };
-
-    // Return the generated code as a TokenStream
-    generated_code.into()
+    whitelist::whitelist_impl(args, input).into()
 }

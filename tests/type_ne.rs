@@ -4,4 +4,11 @@
 #[macro_use]
 extern crate static_assertions;
 
-assert_type_ne_all!(u8, u16, u32);
+
+#[cfg(test)]
+mod simple_tests {
+    #[test]
+    fn test_assert_type_ne_all() {
+        assert_type_ne_all!(u8, u16, u32);
+    }
+}

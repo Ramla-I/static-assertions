@@ -23,6 +23,7 @@ maintenance = { status = "passively-maintained" }
 
 [features]
 nightly = []
+proc_static_assertions = []
 
 [dependencies]
 syn = { version = "2.0.68", features = ["full"] }

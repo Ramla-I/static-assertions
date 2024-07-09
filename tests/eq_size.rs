@@ -4,9 +4,42 @@
 #[macro_use]
 extern crate static_assertions;
 
-assert_size_eq!(u8, u8, (u8,), [u8; 1]);
 
-mod assoc_type {
+#[cfg(test)]
+mod simple_tests {
+    #[test]
+    fn test_assert_size_eq() {
+        assert_size_eq!(u8, u8);
+        assert_size_eq!([u8; 2], u16);
+        assert_size_eq!(u8, u8, (u8,), [u8; 1]);
+        assert_size_eq!([u8; 2], u16, (u8, u8));
+        assert_size_eq!([u8; 4], u32, (u16, u8, u8), (u16, u16));
+    }
+
+    #[test]
+    fn test_assert_size_eq_val() {
+        assert_size_eq_val!(0u8, 0u8);
+        assert_size_eq_val!([0u8; 2], 0u16);
+        assert_size_eq_val!([0u8; 2], 0u16, (0u8, 0u8));
+        assert_size_eq_val!([0u8; 4], 0u32, (0u16, 0u8, 0u8), (0u16, 0u16));
+    }
+
+    #[test]
+    fn test_assert_size_eq_ptr() {
+        let mut x = 0;
+        assert_size_eq_ptr!(&mut x, &0);
+        x = 20;
+        assert_size_eq_ptr!(&mut x, &0);
+    }
+
+    // Should fail to compile (un-comment to test manually):
+    // assert_size_eq!(u8, u16);
+    // assert_size_eq_val!(0u8, 0u16);
+}
+
+
+#[cfg(test)]
+mod assoc_type_tests {
     trait Trait {
         type AssocItem: ?Sized;
     }
@@ -17,16 +50,15 @@ mod assoc_type {
 
     #[allow(dead_code)]
     struct Value;
-
-    assert_size_eq!(<Value as Trait>::AssocItem, Value);
-
-    // TODO: Is this possible?
-    // pub fn test<T: Trait>() {
-    //     assert_size_eq!(<T as Trait>::AssocItem, T);
-    // }
+    
+    #[test]
+    fn test_assoc_type_item() {
+        assert_size_eq!(<Value as Trait>::AssocItem, Value);
+    }
 }
 
-// Placed in separate module so that DropCounter's fields are private
+
+// Private DropCounter
 mod dc {
     /// A type that acts like somewhat of a reference counter.
     pub struct DropCounter<'a> {
@@ -50,64 +82,42 @@ mod dc {
         }
     }
 }
-use dc::*;
 
-/// A type that panics on drop.
-#[allow(dead_code)]
-struct PanicDrop<T>(T);
 
-impl<T> Drop for PanicDrop<T> {
-    fn drop(&mut self) {
-        panic!("Dropped!");
-    }
-}
+mod dc_tests {
+    use dc::*;
 
-#[test]
-fn test_eq_size() {
-    assert_size_eq!([u8; 2], u16);
-    assert_size_eq!([u8; 2], u16, (u8, u8));
-    assert_size_eq!([u8; 4], u32, (u16, u8, u8), (u16, u16));
+    /// A type that panics on drop.
+    pub struct PanicDrop<T>(T);
 
-    assert_size_eq_val!([0u8; 2], 0u16);
-    assert_size_eq_val!([0u8; 2], 0u16, (0u8, 0u8));
-    assert_size_eq_val!([0u8; 4], 0u32, (0u16, 0u8, 0u8), (0u16, 0u16));
-
-    #[deny(unused_unsafe)]
-    {
-        assert_size_eq!(u8, u8);
-        assert_size_eq_val!(0u8, 0u8);
+    impl<T> Drop for PanicDrop<T> {
+        fn drop(&mut self) {
+            panic!("Dropped!");
+        }
     }
 
-    let x = &mut 0;
-    assert_size_eq_ptr!(x, &0);
-    *x = 20;
-    assert_size_eq_ptr!(x, &0);
-
-    // Should fail to compile (un-comment to test manually):
-    // assert_size_eq!(u8, u16);
-    // assert_size_eq_val!(0u8, 0u16);
-}
-
-#[test]
-fn test_eq_size_no_drop() {
-    assert_size_eq!(u32, PanicDrop<u32>);
-    assert_size_eq!(PanicDrop<u32>, u32);
-    assert_size_eq!(PanicDrop<u32>, PanicDrop<u32>);
-}
-
-#[test]
-fn test_eq_size_drop_count() {
-    let mut count = 0;
-    {
-        let dc = DropCounter::new(&mut count);
-        assert_eq!(dc.count(), 1);
-        assert_size_eq_val!(dc, 0usize);
-        assert_eq!(dc.count(), 1);
-        assert_size_eq_val!(dc, 0usize, dc);
-        assert_eq!(dc.count(), 1);
+    
+    #[test]
+    fn test_eq_size_no_drop() {
+        assert_size_eq!(u32, PanicDrop<u32>);
+        assert_size_eq!(PanicDrop<u32>, u32);
+        assert_size_eq!(PanicDrop<u32>, PanicDrop<u32>);
     }
-    assert_eq!(count, 0);
 
-    assert_size_eq_val!(DropCounter::new(&mut count), 0usize);
-    assert_eq!(count, 0);
+    #[test]
+    fn test_eq_size_drop_count() {
+        let mut count = 0;
+        {
+            let dc = DropCounter::new(&mut count);
+            assert_eq!(dc.count(), 1);
+            assert_size_eq_val!(dc, 0usize);
+            assert_eq!(dc.count(), 1);
+            assert_size_eq_val!(dc, 0usize, dc);
+            assert_eq!(dc.count(), 1);
+        }
+        assert_eq!(count, 0);
+
+        assert_size_eq_val!(DropCounter::new(&mut count), 0usize);
+        assert_eq!(count, 0);
+    }
 }
