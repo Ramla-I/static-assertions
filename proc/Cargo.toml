@@ -25,6 +25,11 @@ maintenance = { status = "passively-maintained" }
 nightly = []
 proc_static_assertions = []
 
+
+# proc_macro2: This is a separate to compiler based proc_macro crate that provides a more 
+# flexible and ergonomic API for working with Rust's procedural macros. It's designed to 
+# facilitate manipulation of Rust syntax trees (AST) and token streams.
+
 [dependencies]
 syn = { version = "2.0.68", features = ["full"] }
 proc-macro2 = "1.0.86"

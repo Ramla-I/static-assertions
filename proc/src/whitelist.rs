@@ -1,17 +1,16 @@
-use syn::{ItemImpl, Result, Token, LitStr};
-use syn::parse::{Parse, ParseStream};
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::{
+    parse::{Parse, ParseStream},
+    ItemImpl, ImplItem, LitStr, Result, Token,
+};
 
-// This module provides a procedural macro attribute `#[whitelist(functions = "...")]`
-// to specify a whitelist of functions allowed to mutate fields of a struct.
-
+/// Struct to hold the whitelist of functions.
 pub struct WhitelistArgs {
     pub functions: Vec<String>,
 }
 
 impl Parse for WhitelistArgs {
-    // Custom implementation for parse_macro_input!.
     fn parse(input: ParseStream) -> Result<Self> {
         let mut functions = Vec::new();
 
@@ -29,26 +28,30 @@ impl Parse for WhitelistArgs {
 }
 
 /// Procedural macro implementation to insert the whitelist of functions into the global map.
-pub fn whitelist_impl(args: WhitelistArgs, input: ItemImpl) -> TokenStream {
-    let self_ty = &input.self_ty;
-    let whitelist_functions = args.functions;
+pub fn whitelist_impl(args: WhitelistArgs, mut input: ItemImpl) -> TokenStream {
+    let allowed_functions: Vec<String> = args.functions;
 
-    // Convert whitelist functions to a form usable in the quote! macro.
-    let whitelist_functions_iter = whitelist_functions.iter().map(|f| quote! { #f }).collect::<Vec<_>>();
-
-    // Generate AST code to enforce the whitelist on struct fields restrictions.
-    let generated_code = quote! {
-        impl #self_ty {
-            fn check_whitelist() {
-                let caller_function = std::any::type_name::<Self>();
-                let whitelist: &[&str] = &[#(#whitelist_functions_iter),*];
-
-                if !whitelist.contains(&caller_function) {
-                    panic!("Attempted mutation from unauthorized function!");
-                }
+    // Iterate through items in the impl block
+    for item in &mut input.items {
+        // Check if the item is a method
+        if let ImplItem::Fn(method) = item {
+            let method_name = method.sig.ident.to_string();
+            
+            // Check if the method is not in the allowed functions list
+            if !allowed_functions.contains(&method_name) {
+                // Generate compile-time error if method is not allowed
+                let error_message = format!(
+                    "Attempted mutation from unauthorized function: {}",
+                    method_name
+                );
+                method.block = syn::parse2(quote!({
+                    compile_error!(#error_message);
+                })).unwrap();
             }
         }
-    };
+    }
 
-    generated_code.into()
+    TokenStream::from(quote! {
+        #input
+    })
 }
