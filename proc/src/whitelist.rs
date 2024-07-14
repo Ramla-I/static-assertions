@@ -1,11 +1,10 @@
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
-    ItemImpl, ImplItem, LitStr, Result, Token,
+    ItemImpl, LitStr, Result, Token,
 };
 
-/// Struct to hold the whitelist of functions.
 pub struct WhitelistArgs {
     pub functions: Vec<String>,
 }
@@ -27,31 +26,31 @@ impl Parse for WhitelistArgs {
     }
 }
 
-/// Procedural macro implementation to insert the whitelist of functions into the global map.
-pub fn whitelist_impl(args: WhitelistArgs, mut input: ItemImpl) -> TokenStream {
-    let allowed_functions: Vec<String> = args.functions;
+pub fn assert_mutatedby_impl(allowed_functions: &[String], input: ItemImpl) -> TokenStream {
+    // Get the name of the Struct/Enum being implemented.
+    let struct_name = input.self_ty.clone().into_token_stream();
+    let struct_name_str = struct_name.to_string();
 
-    // Iterate through items in the impl block
-    for item in &mut input.items {
-        // Check if the item is a method
-        if let ImplItem::Fn(method) = item {
-            let method_name = method.sig.ident.to_string();
-            
-            // Check if the method is not in the allowed functions list
-            if !allowed_functions.contains(&method_name) {
-                // Generate compile-time error if method is not allowed
-                let error_message = format!(
-                    "Attempted mutation from unauthorized function: {}",
-                    method_name
-                );
-                method.block = syn::parse2(quote!({
-                    compile_error!(#error_message);
-                })).unwrap();
+    // Generate a unique function name for the manual mutation check function at the callsite.
+    // NOTE: We cannot automatically check the callsite fn, unless use Rust Lints like Clippy.
+    // However, that would require forking the repo and directly contributing there.
+    let check_fn_name = format!("__{}_field_mutate_check", struct_name_str);
+    let check_fn_ident = syn::Ident::new(&check_fn_name, proc_macro2::Span::call_site());
+
+    // Generate injected AST for the mutation check.
+    let check_fn_code = quote! {
+        impl #struct_name {
+            pub fn #check_fn_ident(caller_name: &str) {
+                match caller_name {
+                    #(#allowed_functions => return,)*
+                    _ => panic!("Unauthorized function trying to mutate fields in {}: {}", stringify!(#struct_name), caller_name),
+                }
             }
         }
-    }
+    };
 
-    TokenStream::from(quote! {
-        #input
-    })
+    let mut output = input.into_token_stream();
+    output.extend(check_fn_code);
+
+    output.into()
 }

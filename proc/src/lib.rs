@@ -126,9 +126,9 @@ pub fn assert_align_size(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// A procedural macro attribute to hold the whitelist of functions.
 /// Checks if a field of a type is only mutated in certain functions.
 #[proc_macro_attribute]
-pub fn whitelist(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn mutatedby(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemImpl);
-    let args = parse_macro_input!(attr as whitelist::WhitelistArgs);
+    let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-    whitelist::whitelist_impl(args, input).into()
+    whitelist::assert_mutatedby_impl(&fns.functions, input).into()
 }

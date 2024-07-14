@@ -9,17 +9,21 @@ struct MyStruct {
     field: i32,
 }
 
-// The functions allowed to mutate the field in MyStruct
-#[whitelist(functions = "allowed_mutate")]
+#[mutatedby("allowed_mutate", "allowed_mutate2")]
 impl MyStruct {
-    // Allowed function
     pub fn allowed_mutate(&mut self) {
         self.field += 1;
+        Self::__MyStruct_field_mutate_check("allowed_mutate");
+    }
+    
+    pub fn allowed_mutate_multiple(&mut self) {
+        self.field -= 1;
+        Self::__MyStruct_field_mutate_check("allowed_mutate");
     }
 
-    // Unauthorized function
     pub fn unauthorized_mutate(&mut self) {
         self.field = 0;
+        Self::__MyStruct_field_mutate_check("unauthorized_mutate");
     }
 }
 
@@ -29,8 +33,22 @@ mod tests {
 
     #[test]
     fn test_allowed_mutate() {
-        let mut my_struct = MyStruct::default();
-        my_struct.allowed_mutate();
-        assert_eq!(my_struct.field, 1);
+        let mut instance = MyStruct::default();
+        instance.allowed_mutate();
+        assert_eq!(instance.field, 1);
+    }
+
+    #[test]
+    fn test_allowed_mutate_multiple() {
+        let mut instance = MyStruct::default();
+        instance.allowed_mutate_multiple();
+        assert_eq!(instance.field, -1);
+    }
+
+    #[test]
+    #[should_panic(expected = "Unauthorized function trying to mutate fields in MyStruct: unauthorized_mutate")]
+    fn test_unauthorized_mutate() {
+        let mut instance = MyStruct::default();
+        instance.unauthorized_mutate();
     }
 }
