@@ -1,7 +1,8 @@
 [package]
 name = "proc_static_assertions"
 version = "0.0.0"
-authors = ["Nikolai Vazquez"]
+edition = "2021"
+authors = ["Nikolai Vazquez", "Anton Melnychuk"]
 license = "MIT OR Apache-2.0"
 readme = "../README.md"
 homepage = "https://github.com/nvzqz/static-assertions-rs"

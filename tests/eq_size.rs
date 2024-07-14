@@ -40,6 +40,7 @@ mod simple_tests {
 
 #[cfg(test)]
 mod assoc_type_tests {
+    #[allow(dead_code)]
     trait Trait {
         type AssocItem: ?Sized;
     }

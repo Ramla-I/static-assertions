@@ -34,7 +34,7 @@ pub fn assert_mutatedby_impl(allowed_functions: &[String], input: ItemImpl) -> T
     // Generate a unique function name for the manual mutation check function at the callsite.
     // NOTE: We cannot automatically check the callsite fn, unless use Rust Lints like Clippy.
     // However, that would require forking the repo and directly contributing there.
-    let check_fn_name = format!("__{}_field_mutate_check", struct_name_str);
+    let check_fn_name = format!("__{}_mutates", struct_name_str);
     let check_fn_ident = syn::Ident::new(&check_fn_name, proc_macro2::Span::call_site());
 
     // Generate injected AST for the mutation check.

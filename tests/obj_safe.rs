@@ -11,6 +11,7 @@ mod simple_tests {
         assert_obj_safe!(core::fmt::Debug, Send, Sync);
     }
 
+    #[allow(dead_code)]
     trait ObjSafe {}
     
     #[test]

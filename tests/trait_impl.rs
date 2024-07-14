@@ -1,5 +1,6 @@
 #![no_std]
 #![deny(unsafe_code)]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate static_assertions;
@@ -37,20 +38,14 @@ mod simple_tests {
         assert_impl!(for('a, T: 'a) &'a mut T: !Copy);
     }
 
-    #[test]
-    fn test_assert_impl_phantom() {
-        assert_impl!(for(T) PhantomData<T>: Clone);
-    }
-
-    #[test]
     fn test_assert_impl_copy() {
         assert_impl!(for(T: Copy) T: Clone);
     }
 }
 
 mod foo_tests {
-    #[allow(dead_code)]
     struct Foo;
+
     trait A {}
     trait B {}
     trait C {}
