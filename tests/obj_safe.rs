@@ -1,5 +1,6 @@
 #![no_std]
 #![deny(unsafe_code)]
+#![allow(dead_code)]
 
 #[macro_use]
 extern crate static_assertions;

@@ -4,6 +4,8 @@
 #[macro_use]
 extern crate proc_static_assertions;
 
+// See more abiout how rust compiler allignes memory:
+// https://doc.rust-lang.org/reference/type-layout.html.
 mod simple_tests {
     #[test]
     fn test_assert_align_size() {

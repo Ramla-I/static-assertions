@@ -86,7 +86,7 @@ mod dc {
 
 
 mod dc_tests {
-    use dc::*;
+    use super::dc::*;
 
     /// A type that panics on drop.
     pub struct PanicDrop<T>(T);

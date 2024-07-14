@@ -2,6 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Fields, ItemStruct, Visibility};
 
+// TODO: allow assertions for nested structures.
 pub fn assert_private_fields_impl(input: ItemStruct) -> TokenStream {
     let struct_name = &input.ident;
     let mut all_private = true;

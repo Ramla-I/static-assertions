@@ -9,6 +9,10 @@ pub struct SizeAlign {
 
 /// Custom way to parse and type-check proc macro.
 /// #[proc_macro(attr_1 : value_1 , attr_2 : value_2)].
+/// 
+/// This attribute is used primarily during development 
+/// and testing phases to enforce specific memory
+/// layout requirements for structs.
 impl syn::parse::Parse for SizeAlign {
     fn parse(input: syn::parse::ParseStream) -> Result<Self> {
         let mut size = None;

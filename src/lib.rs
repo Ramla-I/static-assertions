@@ -103,15 +103,8 @@
 
 #[cfg(feature = "proc_static_assertions")]
 extern crate proc_static_assertions;
-
-// TODO: Fix this, in the future there might be more.
 #[cfg(feature = "proc_static_assertions")]
-pub use proc_static_assertions::assert_align_size;
-#[cfg(feature = "proc_static_assertions")]
-pub use proc_static_assertions::whitelist_derive;
-#[cfg(feature = "proc_static_assertions")]
-pub use proc_static_assertions::assert_private_fields;
-
+pub use proc_static_assertions::assert;
 
 // This module should never be used publicly and is not part of this crate's
 // semver requirements.
@@ -130,8 +123,6 @@ mod assert_type;
 mod const_assert;
 mod does_impl;
 mod assert_fn_consumes;
-mod whitelist_macro;
-
 
 // Utility macros.
 //
