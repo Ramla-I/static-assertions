@@ -1,6 +1,7 @@
 use proc_macro::TokenStream;
 use quote::{ToTokens, quote};
 
+
 pub fn assert_mutatedby_impl(allowed_functions: &[String], input: syn::ItemImpl) -> TokenStream {
     let struct_name = input.self_ty.clone().into_token_stream();
 

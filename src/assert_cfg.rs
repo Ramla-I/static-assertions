@@ -20,7 +20,7 @@
 /// assert_cfg!(any(unix, windows), "There is only support for Unix or Windows");
 ///
 /// // User needs to specify a database back-end
-/// # #[cfg(target_pointer_width = "0")] // Impossible
+/// #[cfg(any())] // Impossible
 /// assert_cfg!(all(not(all(feature = "mysql", feature = "mongodb")),
 ///                 any(    feature = "mysql", feature = "mongodb")),
 ///             "Must exclusively use MySQL or MongoDB as database back-end");
