@@ -91,10 +91,15 @@ extern crate syn;
 
 mod private_fields;
 mod size_align;
+mod mutatedby;
+mod calledby;
 mod whitelist;
 
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput, ItemStruct, ItemImpl};
+use syn::{
+    parse_macro_input, DeriveInput, 
+    ItemStruct, ItemImpl, ItemFn
+};
 
 
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
@@ -130,5 +135,14 @@ pub fn mutatedby(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemImpl);
     let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-    whitelist::assert_mutatedby_impl(&fns.functions, input).into()
+    mutatedby::assert_mutatedby_impl(&fns.functions, input).into()
+}
+
+/// A function is only called in certain functions.
+#[proc_macro_attribute]
+pub fn calledby(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+    let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
+
+    calledby::assert_calledby_impl(&fns.functions, input).into()
 }
