@@ -13,6 +13,8 @@ mod simple_tests {
     }
 
     fn consume(_x: A) {}
+    #[allow(dead_code)]
+    fn consume_multiple(_x: A, _y: u32) {}
 
     #[test]
     fn test_assert_fields_type() {

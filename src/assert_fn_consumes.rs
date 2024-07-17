@@ -1,4 +1,4 @@
-/// Asserts that a function can consume one specified type with correct lifetime.
+/// Asserts that a function can consume one specified type.
 ///
 /// # Examples
 ///
@@ -61,26 +61,6 @@ macro_rules! assert_function_consumes_one {
         #[allow(unused)]
         const _: () = {
             $(fn dummy(v: &$ti) {
-                let _ = $f(v);
-            })*
-        };
-    };
-
-    // Introduces a lifetime parameter $lt and tests $f with multiple $ti types
-    ($f:ident: $lt:lifetime, $($ti:ty),*) => {
-        #[allow(unused)]
-        const _: () = {
-            $(fn dummy<$lt>(v: $ti) {
-                let _ = $f(v);
-            })*
-        };
-    };
-
-    // Combines lifetime $lt and reference $ti type checking for $f
-    ($f:ident: $lt:lifetime, & $($ti:ty),*) => {
-        #[allow(unused)]
-        const _: () = {
-            $(fn dummy<$lt>(v: &$ti) {
                 let _ = $f(v);
             })*
         };

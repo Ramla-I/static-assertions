@@ -89,22 +89,29 @@ extern crate quote;
 extern crate proc_macro;
 extern crate syn;
 
+// The release notes for syn v.2 say that AttributeArgs was removed.
+// Here we build out custom parse_macro_input! implementation.
+// https://docs.rs/syn/latest/syn/meta/fn.parser.html#example
+mod parser;
+
+use parser::whitelist;
+use parser::fnwhitelist;
+
 mod private_fields;
 mod size_align;
 mod mutatedby;
 mod calledby;
-mod whitelist;
-
-use proc_macro::TokenStream;
-use syn::{
-    parse_macro_input, DeriveInput, 
-    ItemStruct, ItemImpl, ItemFn
-};
-
+mod consumes;
 
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
 // https://doc.rust-lang.org/book/ch19-06-macros.html#how-to-write-a-custom-derive-macro
+use proc_macro::TokenStream;
 
+use syn::{
+    parse_macro_input, DeriveInput, 
+    ItemStruct, ItemImpl, ItemFn};
+
+    
 /// A procedural macro to assert that all fields in a struct are private.
 #[proc_macro_attribute]
 pub fn assert_private_fields(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -116,10 +123,6 @@ pub fn assert_private_fields(_attr: TokenStream, item: TokenStream) -> TokenStre
 /// A procedural macro attribute to assert the size and alignment of a struct.
 #[proc_macro_attribute]
 pub fn assert_align_size(attr: TokenStream, item: TokenStream) -> TokenStream {
-    // The release notes for syn v.2 say that AttributeArgs was removed, 
-    // and says to ither use Punctuated<Meta, Token![,]> or build you own 
-    // parse_macro_input! implementation. Follow the link for an example:
-    // https://docs.rs/syn/latest/syn/meta/fn.parser.html#example
     let size_align = parse_macro_input!(attr as size_align::SizeAlign);
     let size_align::SizeAlign { size, align } = size_align;
 
@@ -145,4 +148,12 @@ pub fn calledby(attr: TokenStream, item: TokenStream) -> TokenStream {
     let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
     calledby::assert_calledby_impl(&fns.functions, input).into()
+}
+
+/// A function consumes a list of instances of certain types.
+/// Allows to quickly assert function argument types.
+#[proc_macro]
+pub fn assert_function_consumes(item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as fnwhitelist::WhitelistArgs);
+    consumes::assert_function_consumes_impl(input).into()
 }
