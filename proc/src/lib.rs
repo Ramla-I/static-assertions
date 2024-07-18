@@ -113,10 +113,11 @@ use syn::{
     
 /// A procedural macro to assert that all fields in a struct are private.
 #[proc_macro_attribute]
-pub fn assert_private_fields(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn assert_private_fields(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemStruct);
+    let fields = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-    private_fields::assert_private_fields_impl(input).into()
+    private_fields::assert_private_fields_impl(&fields.values, input).into()
 }
 
 /// A procedural macro attribute to assert the size and alignment of a struct.

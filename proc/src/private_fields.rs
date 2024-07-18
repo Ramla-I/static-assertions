@@ -2,25 +2,27 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Fields, ItemStruct, Visibility};
 
-// TODO: allow assertions for nested structures.
-pub fn assert_private_fields_impl(input: ItemStruct) -> TokenStream {
+pub fn assert_private_fields_impl(whitelist: &[String], input: ItemStruct) -> TokenStream {
     let struct_name = &input.ident;
-    let mut all_private = true;
+    let whitelist_set: std::collections::HashSet<String> = whitelist.iter().cloned().collect();
+    let mut public_fields = Vec::new();
 
     if let Fields::Named(ref fields) = input.fields {
         for field in fields.named.iter() {
-            if let Visibility::Public(_) = field.vis {
-                all_private = false;
-                break;
+            let field_name = field.ident.as_ref().unwrap().to_string();
+            if whitelist_set.contains(&field_name) {
+                if let Visibility::Public(_) = field.vis {
+                    public_fields.push(field_name);
+                }
             }
         }
     }
 
-    if all_private {
+    if public_fields.is_empty() {
         TokenStream::new()
     } else {
         let expanded = quote! {
-            compile_error!(concat!("Struct ", stringify!(#struct_name), " has public fields; all fields must be private."));
+            compile_error!(concat!("Struct ", stringify!(#struct_name), " has public fields: ", #(#public_fields),* ,"; these fields must be private."));
         };
         TokenStream::from(expanded)
     }
