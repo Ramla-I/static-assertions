@@ -4,22 +4,22 @@ use syn::{
 };
 
 pub struct WhitelistArgs {
-    pub functions: Vec<String>,
+    pub values: Vec<String>,
 }
 
 impl Parse for WhitelistArgs {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mut functions = Vec::new();
+        let mut values = Vec::new();
 
         while !input.is_empty() {
             let function_name: LitStr = input.parse()?;
-            functions.push(function_name.value());
+            values.push(function_name.value());
 
-            if input.peek(Token![,]) {
+            if !input.is_empty() && input.peek(Token![,]) {
                 input.parse::<Token![,]>()?;
             }
         }
 
-        Ok(WhitelistArgs { functions })
+        Ok(WhitelistArgs { values })
     }
 }

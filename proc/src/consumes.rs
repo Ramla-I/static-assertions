@@ -1,50 +1,54 @@
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{parse, ItemFn, Error};
-use crate::fnwhitelist;
+use syn::{Error, FnArg, ItemFn};
+use quote::quote;
 
-// Your procedural macro implementation
-pub fn assert_function_consumes_impl(input: fnwhitelist::WhitelistArgs) -> TokenStream {
-    let fn_name = &input.fn_name;
-    let expected_arg_types = &input.arg_types;
+pub fn assert_function_consumes_impl(whitelist: &[String], function: ItemFn) -> TokenStream {
+    let mut errors = Vec::new();
 
-    if expected_arg_types.is_empty() {
-        return Error::new_spanned(&fn_name, "Expected at least one type").to_compile_error().into();
-    }
+    for w in whitelist {
+        // Check if any argument type matches the current whitelist type.
+        let mut found_match = false;
+        for input_arg in &function.sig.inputs {
+            if let FnArg::Typed(arg) = input_arg {
+                let arg_type = &arg.ty;
+                let arg_type_str = quote! { #arg_type }.to_string();
+                let cleaned_type_str = clean_type_string(&arg_type_str);
 
-    // Convert fn_name to a proc_macro::TokenStream
-    let fn_name_token_stream: proc_macro::TokenStream = fn_name.to_token_stream().into();
-
-    // Use syn::parse to parse the function
-    let fn_item: ItemFn = match parse(fn_name_token_stream) {
-        Ok(func) => func,
-        Err(err) => {
-            return Error::new_spanned(fn_name, format!("Failed to parse function: {}", err))
-                .to_compile_error()
-                .into();
+                if is_type_compatible(&cleaned_type_str, w) {
+                    found_match = true;
+                    break;
+                }
+            }
         }
-    };
 
-    let fn_inputs = &fn_item.sig.inputs;
-
-    // Collect the function's argument types
-    let mut function_arg_types = Vec::new();
-    for input in fn_inputs {
-        if let syn::FnArg::Typed(pat_type) = input {
-            let ty = &*pat_type.ty;
-            function_arg_types.push(ty.clone());
+        if !found_match {
+            errors.push(Error::new(
+                function.sig.ident.span(),
+                format!("Compilation error: `{}` type is not consumed by the `{}` function", w, function.sig.ident),
+            ));
         }
     }
 
-    // Check if each expected type is present in the function's argument types
-    for expected in expected_arg_types {
-        if !function_arg_types.iter().any(|ty| ty.to_token_stream().to_string() == expected.to_token_stream().to_string()) {
-            return Error::new_spanned(expected, format!("Type `{}` is not consumed by the function `{}`", expected.to_token_stream(), fn_name))
-                .to_compile_error()
-                .into();
+    if !errors.is_empty() {
+        let mut error_message = String::from("Function argument types do not match the whitelist:\n");
+        for error in &errors {
+            error_message.push_str(&format!(" - {}\n", error));
         }
+
+        return TokenStream::from(quote! {
+            compile_error!(#error_message);
+        });
     }
 
-    // If everything is valid, return an empty TokenStream (you can modify this to return something meaningful)
-    quote! {}.into()
+    TokenStream::from(quote! { #function })
+}
+
+fn clean_type_string(type_str: &str) -> String {
+    type_str.replace(" ", "") // Remove any spaces
+            .replace("\n", "") // Remove new lines
+            .replace("\t", "") // Remove tabs
+}
+
+fn is_type_compatible(arg_type_str: &str, whitelist_type: &str) -> bool {
+    arg_type_str.contains(whitelist_type)
 }

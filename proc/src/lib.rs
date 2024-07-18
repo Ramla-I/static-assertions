@@ -95,7 +95,6 @@ extern crate syn;
 mod parser;
 
 use parser::whitelist;
-use parser::fnwhitelist;
 
 mod private_fields;
 mod size_align;
@@ -138,7 +137,7 @@ pub fn mutatedby(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemImpl);
     let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-    mutatedby::assert_mutatedby_impl(&fns.functions, input).into()
+    mutatedby::assert_mutatedby_impl(&fns.values, input).into()
 }
 
 /// A function is only called in certain functions.
@@ -147,13 +146,16 @@ pub fn calledby(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
     let fns = parse_macro_input!(attr as whitelist::WhitelistArgs);
 
-    calledby::assert_calledby_impl(&fns.functions, input).into()
+    calledby::assert_calledby_impl(&fns.values, input).into()
 }
 
-/// A function consumes a list of instances of certain types.
-/// Allows to quickly assert function argument types.
-#[proc_macro]
-pub fn assert_function_consumes(item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as fnwhitelist::WhitelistArgs);
-    consumes::assert_function_consumes_impl(input).into()
+
+/// A function consumes a list of instances of certain types. Allows to 
+/// quickly assert function argument types where Rustc cannot access.
+#[proc_macro_attribute]
+pub fn assert_function_consumes(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let types = parse_macro_input!(attr as whitelist::WhitelistArgs);
+    let input = parse_macro_input!(item as ItemFn);
+
+    consumes::assert_function_consumes_impl(&types.values, input).into()
 }
