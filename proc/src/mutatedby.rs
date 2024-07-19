@@ -9,10 +9,6 @@ pub fn assert_mutatedby_impl(allowed_functions: &[String], input: syn::ItemImpl)
     //
     // NOTE: We cannot automatically check the callsite fn, unless use Rust Lints like Clippy.
     // However, that would require forking the repo and directly contributing there.
-    //
-    // INFO: Potential improvement would be automize this process by some global proc-macro #![assert_mutates]
-    // that would go through all the functions and check its arguments for existance of &mut MyStruct, so
-    // it could generate injected AST at compile time type of `MyStruct::__mutates("function_name");`.
     let check_fn_ident = syn::Ident::new("__mutates", proc_macro2::Span::call_site());
 
     // Generate injected AST for the mutation check.

@@ -150,6 +150,20 @@ pub fn calledby(attr: TokenStream, item: TokenStream) -> TokenStream {
     calledby::assert_calledby_impl(&fns.values, input).into()
 }
 
+/// Going direct way to protect the function usage is hard, since we 
+/// don't know where the call is completed outside the whitelist-macro, so we go 
+/// the other way by generating a check-function __callsite awaiting for the 
+/// function name as an arguemnt. This function is injected in the 
+/// crate at compile time, so that developer can manually make a check-call via
+/// Origin::__callsite("function_name"). However, this is not convenient and loose
+/// the sense of automatic verification. This macro is to further simplify the 
+/// process of verification by automatically generating such calls when needed.
+#[proc_macro_attribute]
+pub fn assert_callsite(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+    let expanded = calledby::assert_callsite_impl(input);
+    TokenStream::from(expanded)
+}
 
 /// A function consumes a list of instances of certain types. Allows to 
 /// quickly assert function argument types where Rustc cannot access.

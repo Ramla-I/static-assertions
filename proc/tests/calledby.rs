@@ -7,23 +7,24 @@ extern crate proc_static_assertions;
 pub struct MyStruct;
 
 impl MyStruct {
+    /// Try removing one of the function here to see
     #[calledby("allowed_caller", "allowed_caller_multiple", "outside_caller")]
     pub fn target_function(&self) -> &str {
         return "Hello World";
     }
 
+    #[assert_callsite]
     pub fn allowed_caller(&self) {
-        Self::__callsite("allowed_caller");
         self.target_function();
     }
 
+    #[assert_callsite]
     pub fn allowed_caller_multiple(&self) {
-        Self::__callsite("allowed_caller_multiple");
         self.target_function();
     }
 
+    #[assert_callsite]
     pub fn unauthorized_caller(&self) {
-        Self::__callsite("unauthorized_caller");
         self.target_function();
     }
 }

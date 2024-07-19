@@ -1,6 +1,8 @@
+use proc_macro2::Ident;
 use proc_macro::TokenStream;
 use quote::{quote_spanned, quote};
 use syn::spanned::Spanned;
+use syn::{Stmt, visit_mut::{self, VisitMut}};
 
 pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) -> TokenStream {
     let fn_name = &input.sig.ident;
@@ -10,10 +12,6 @@ pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) ->
     //
     // NOTE: We cannot automatically check the callsite fn, unless use Rust Lints like Clippy.
     // However, that would require forking the repo and directly contributing there.
-    //
-    // INFO: Potential improvement would be automize this process by some global proc-macro #![assert_callsite]
-    // that would go through all the functions and check for usage of another struct related functions, so it 
-    // could generate injected AST at compile time type of `MyStruct::__callsite("function_name");`.
     let check_fn_ident = syn::Ident::new("__callsite", fn_span);
 
     // Generate the list of unauthorized checks.
@@ -38,4 +36,57 @@ pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) ->
     };
 
     TokenStream::from(expanded)
+}
+
+pub fn assert_callsite_impl(input: syn::ItemFn) -> proc_macro2::TokenStream {
+    let fn_name = input.sig.ident.clone();
+    let fn_name_str = fn_name.to_string();
+    
+    // Visitor to find function calls
+    struct FnCallVisitor {
+        calls: Vec<Ident>,
+    }
+    
+    impl VisitMut for FnCallVisitor {
+        fn visit_stmt_mut(&mut self, stmt: &mut Stmt) {
+            if let Stmt::Expr(expr, _) = stmt {
+                if let syn::Expr::MethodCall(method_call) = expr {
+                    self.calls.push(method_call.method.clone());
+                }
+            }
+            visit_mut::visit_stmt_mut(self, stmt);
+        }
+    }
+    
+    let mut visitor = FnCallVisitor { calls: vec![] };
+    let mut input_clone = input.clone();
+    visitor.visit_item_fn_mut(&mut input_clone);
+    
+    let _calls = visitor.calls;
+    
+    let callsite_code = quote! {
+        Self::__callsite(#fn_name_str);
+    };
+    let injected_code: Stmt = syn::parse_quote!(#callsite_code);
+    
+    let block = &input.block;
+    let stmts = &block.stmts;
+    
+    let new_block = quote! {
+        {
+            #injected_code
+            #(#stmts)*
+        }
+    };
+
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let sig = &input.sig;
+
+    let result = quote! {
+        #(#attrs)*
+        #vis #sig #new_block
+    };
+
+    result.into()
 }
