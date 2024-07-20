@@ -1,8 +1,8 @@
-use proc_macro2::Ident;
 use proc_macro::TokenStream;
 use quote::{quote_spanned, quote};
 use syn::spanned::Spanned;
-use syn::{Stmt, visit_mut::{self, VisitMut}};
+use syn::{Expr, ExprMethodCall, Type, TypePath};
+use syn::visit_mut::{VisitMut, self};
 
 pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) -> TokenStream {
     let fn_name = &input.sig.ident;
@@ -38,40 +38,78 @@ pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) ->
     TokenStream::from(expanded)
 }
 
+
 pub fn assert_callsite_impl(input: syn::ItemFn) -> proc_macro2::TokenStream {
     let fn_name = input.sig.ident.clone();
     let fn_name_str = fn_name.to_string();
     
-    // Visitor to find function calls
+    // Visitor to find method calls
     struct FnCallVisitor {
-        calls: Vec<Ident>,
+        calls: Vec<(proc_macro2::Ident, Type)>,
     }
     
     impl VisitMut for FnCallVisitor {
-        fn visit_stmt_mut(&mut self, stmt: &mut Stmt) {
-            if let Stmt::Expr(expr, _) = stmt {
-                if let syn::Expr::MethodCall(method_call) = expr {
-                    self.calls.push(method_call.method.clone());
+        // Traverse the body of the function to find method calls
+        fn visit_expr_mut(&mut self, expr: &mut Expr) {
+            // Check if the current expression is a method call
+            if let Expr::MethodCall(method_call) = expr {
+                if let Some(receiver_type) = extract_receiver_type(&method_call) {
+                    // Extract the method and receiver type
+                    self.calls.push((method_call.method.clone(), receiver_type));
                 }
             }
-            visit_mut::visit_stmt_mut(self, stmt);
+            // Continue traversing nested expressions
+            visit_mut::visit_expr_mut(self, expr);
+        }
+    }
+
+    // Extract the type of the receiver from the method call
+    fn extract_receiver_type(method_call: &ExprMethodCall) -> Option<Type> {
+        match &*method_call.receiver {
+            Expr::Path(expr_path) => Some(Type::Path(TypePath {
+                qself: None,
+                path: expr_path.path.clone(),
+            })),
+            _ => None,
         }
     }
     
     let mut visitor = FnCallVisitor { calls: vec![] };
     let mut input_clone = input.clone();
     visitor.visit_item_fn_mut(&mut input_clone);
+    let callsites = visitor.calls;
+
+    // Prepare new TokenStreams for each callsite assertion
+    let mut injected_code = proc_macro2::TokenStream::new();
     
-    let _calls = visitor.calls;
-    
-    let callsite_code = quote! {
-        Self::__callsite(#fn_name_str);
-    };
-    let injected_code: Stmt = syn::parse_quote!(#callsite_code);
+    for (_, receiver_type) in callsites {
+        let callsite_code = match &receiver_type {
+            Type::Path(type_path) => {
+                let path = &type_path.path;
+                if path.is_ident("self") {
+                    quote! {
+                        Self::__callsite(#fn_name_str);
+                    }
+                } else {
+                    quote! {
+                        #path::__callsite(#fn_name_str);
+                    }
+                }
+            },
+            _ => {
+                quote! {
+                    compile_error!("Unsupported receiver type for __callsite");
+                }
+            }
+        };
+        injected_code.extend(quote! {
+            #callsite_code
+        });
+    }
     
     let block = &input.block;
     let stmts = &block.stmts;
-    
+
     let new_block = quote! {
         {
             #injected_code
