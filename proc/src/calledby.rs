@@ -8,7 +8,7 @@ pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) ->
     let fn_name = &input.sig.ident;
     let fn_span = input.span();
 
-    // Generate a strct unique function name for the manual mutation check function at the callsite.
+    // Generate a struct unique function name for the manual mutation check function at the callsite.
     //
     // NOTE: We cannot automatically check the callsite fn, unless use Rust Lints like Clippy.
     // However, that would require forking the repo and directly contributing there.
@@ -37,7 +37,6 @@ pub fn assert_calledby_impl(allowed_functions: &[String], input: syn::ItemFn) ->
 
     TokenStream::from(expanded)
 }
-
 
 pub fn assert_callsite_impl(input: syn::ItemFn) -> proc_macro2::TokenStream {
     let fn_name = input.sig.ident.clone();

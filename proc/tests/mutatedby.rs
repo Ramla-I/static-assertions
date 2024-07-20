@@ -13,19 +13,19 @@ pub struct MyStruct {
 // work around this by explicitly specifying the data to be checked.
 #[mutatedby("allowed_mutate", "allowed_mutate_multiple", "outside_caller")]
 impl MyStruct {
+    #[assert_mutates]
     pub fn allowed_mutate(&mut self) {
         self.field += 1;
-        Self::__mutates("allowed_mutate");
     }
     
+    #[assert_mutates]
     pub fn allowed_mutate_multiple(&mut self) {
         self.field -= 1;
-        Self::__mutates("allowed_mutate_multiple");
     }
 
+    #[assert_mutates]
     pub fn unauthorized_mutate(&mut self) {
         self.field = 0;
-        Self::__mutates("unauthorized_mutate");
     }
 }
 
