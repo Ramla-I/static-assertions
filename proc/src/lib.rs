@@ -101,6 +101,8 @@ mod size_align;
 mod mutatedby;
 mod calledby;
 mod consumes;
+mod mutates;
+mod calls;
 
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
 // https://doc.rust-lang.org/book/ch19-06-macros.html#how-to-write-a-custom-derive-macro
@@ -185,4 +187,14 @@ pub fn assert_callsite(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
     let expanded = calledby::assert_callsite_impl(input);
     TokenStream::from(expanded)
+}
+
+
+/// A function is only called in certain functions.
+#[proc_macro_attribute]
+pub fn calls(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let whitelist = parse_macro_input!(attr as whitelist::WhitelistArgs);
+    let input = parse_macro_input!(item as ItemFn);
+    
+    calls::assert_call_impl(&whitelist.values, &input).into()
 }

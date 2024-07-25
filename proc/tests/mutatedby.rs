@@ -11,7 +11,7 @@ pub struct MyStruct {
 
 // Unfortunately, proc-macros cannot be applied to the Struct fields, so we
 // work around this by explicitly specifying the data to be checked.
-#[mutatedby("allowed_mutate", "allowed_mutate_multiple", "outside_caller")]
+#[mutatedby("allowed_mutate", "allowed_mutate_multiple")]
 impl MyStruct {
     #[assert_mutates]
     pub fn allowed_mutate(&mut self) {
@@ -31,7 +31,6 @@ impl MyStruct {
 
 pub fn outside_caller(instance: &mut MyStruct) {
     instance.field += 2;
-    MyStruct::__mutates("outside_caller");
 }
 
 #[cfg(test)]
