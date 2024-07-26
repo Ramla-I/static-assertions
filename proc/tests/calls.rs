@@ -32,7 +32,7 @@ impl MyStruct {
 }
 
 #[cfg(test)]
-mod tests {
+mod simple_tests {
     use super::*;
 
     #[test]
@@ -54,3 +54,29 @@ mod tests {
     // }
 }
 
+mod nested_tests {
+    use super::*;
+    
+    #[test]
+    fn test_nested_calls() {
+        #[allow(dead_code)]
+        #[calls("allowed_function", "name")]
+        pub fn my_function() {
+            let name = || {
+                while false {
+                    for _ in 0..5 {
+                        // ``` fails
+                        // disallowed_function();
+                        allowed_function();
+                    }
+                }
+
+                // ``` fails
+                // let _i = { disallowed_function(); }
+            };
+
+            name();
+            allowed_function();
+        }
+    }
+}

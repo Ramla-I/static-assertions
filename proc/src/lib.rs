@@ -101,7 +101,6 @@ mod size_align;
 mod mutatedby;
 mod calledby;
 mod consumes;
-mod mutates;
 mod calls;
 
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
