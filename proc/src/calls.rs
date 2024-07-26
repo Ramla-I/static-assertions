@@ -63,7 +63,7 @@ where
     println!("{}: {}", label, item_string);
 }
 
-/// Recursively check all statements in a block
+/// Recursively check all statements in a block.
 fn check_block_for_calls(block: &Block, whitelist: &[String], errors: &mut Vec<Error>) {
     for stmt in &block.stmts {
         match stmt {

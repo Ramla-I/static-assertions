@@ -93,14 +93,16 @@ extern crate syn;
 // Here we build out custom parse_macro_input! implementation.
 // https://docs.rs/syn/latest/syn/meta/fn.parser.html#example
 mod parser;
-
 use parser::whitelist;
+use parser::field_whitelist;
 
 mod private_fields;
 mod size_align;
 mod mutatedby;
-mod calledby;
+
+mod calledby; // to be removed
 mod consumes;
+mod mutates;
 mod calls;
 
 // Function-like macros in Rust take only one TokenStream parameter and return a TokenStream.
@@ -196,4 +198,13 @@ pub fn calls(attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
     
     calls::assert_call_impl(&whitelist.values, &input).into()
+}
+
+/// Checks if a field of a type is only mutated in certain functions.
+#[proc_macro_attribute]
+pub fn mutates(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let macro_data = parse_macro_input!(attr as field_whitelist::WhitelistArgs);
+    let input = parse_macro_input!(item as ItemFn);
+    
+    mutates::assert_mutate_impl(&macro_data, &input).into()
 }

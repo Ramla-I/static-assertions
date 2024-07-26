@@ -8,6 +8,7 @@ pub struct WhitelistArgs {
 }
 
 impl Parse for WhitelistArgs {
+    // #[calledby("func1", "func2", ...)]
     fn parse(input: ParseStream) -> Result<Self> {
         let mut values = Vec::new();
 
