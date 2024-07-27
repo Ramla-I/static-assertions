@@ -59,6 +59,10 @@ mod nested_tests {
     
     #[test]
     fn test_nested_calls() {
+        // A calls macro would require whitelisting all the function called in the function.
+        // Therefore I have also implemented #[nocalls("name")] that swaps mode and allows
+        // restrict the usage to certain functions.
+        
         #[allow(dead_code)]
         #[calls("allowed_function", "name")]
         pub fn my_function() {

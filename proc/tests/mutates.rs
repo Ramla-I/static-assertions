@@ -7,7 +7,7 @@ extern crate proc_static_assertions;
 
 #[derive(Default)]
 pub struct MyStruct {
-    field: i32,
+    pub field: i32,
 }
 
 impl MyStruct {
@@ -16,6 +16,8 @@ impl MyStruct {
         self.field += 1;
     }
     
+    // works even if used several times in a mod
+    #[mutates(MyStruct, field: ("self", "not_listed"))]
     pub fn allowed_mutate_multiple(&mut self) {
         self.field -= 1;
     }
@@ -35,5 +37,39 @@ mod tests {
         let mut instance = MyStruct::default();
         instance.allowed_mutate();
         assert_eq!(instance.field, 1);
+    }
+}
+
+mod nested_tests {
+    use super::*;
+    
+    #[test]
+    #[mutates(MyStruct, field: ("test_nested_mutate"))]
+    fn test_nested_mutate() {
+        #[allow(unused_mut)]
+        let mut instance = MyStruct::default();
+
+        #[allow(unused_mut)]
+        let mut name = || {
+            while false {
+                for _ in 0..5 {
+                    // ```all with = sign fails 
+                    // instance.field = 1;
+                    // instance.field /= 1;
+                    // instance.field *= 1;
+                    // instance.field += 1;
+                    // instance.field -= 1;
+                    instance.field; // ok
+                }
+            }
+
+            // ```fails even if nested
+            // let _i = { instance.field -= 1; };
+            // while false { instance.field -= 1; };
+            // if false { instance.field -= 1; }
+        };
+
+        // Call the inner function
+        name();
     }
 }

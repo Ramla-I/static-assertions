@@ -191,13 +191,24 @@ pub fn assert_callsite(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 
+// This are new correct implementations. 
+
 /// A function is only called in certain functions.
 #[proc_macro_attribute]
 pub fn calls(attr: TokenStream, item: TokenStream) -> TokenStream {
     let whitelist = parse_macro_input!(attr as whitelist::WhitelistArgs);
     let input = parse_macro_input!(item as ItemFn);
     
-    calls::assert_call_impl(&whitelist.values, &input).into()
+    calls::assert_call_impl(&whitelist.values, &input, false).into()
+}
+
+/// A function is restricted to be called only in certain functions.
+#[proc_macro_attribute]
+pub fn nocalls(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let whitelist = parse_macro_input!(attr as whitelist::WhitelistArgs);
+    let input = parse_macro_input!(item as ItemFn);
+    
+    calls::assert_call_impl(&whitelist.values, &input, true).into()
 }
 
 /// Checks if a field of a type is only mutated in certain functions.
