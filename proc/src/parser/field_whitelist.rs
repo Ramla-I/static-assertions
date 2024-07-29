@@ -5,23 +5,17 @@ use syn::{
 
 pub struct WhitelistArgs {
     pub struct_name: String,
-    pub field_name: String,
     pub values: Vec<String>,
 }
 
 impl Parse for WhitelistArgs {
     fn parse (input: ParseStream) -> Result<Self> {
-        // #[mutates(struct_name, field: ("func1", "func2", ...))]
+        // #[mutates(struct_name: (field1, field2, ...))]
         let struct_name: Ident = input.parse()?;
         let struct_name = struct_name.to_string();
-        // Expect a comma before field name.
-        input.parse::<Token![,]>()?;
-        // Parse the field_name.
-        let field_name: Ident = input.parse()?;
-        let field_name = field_name.to_string();
         // Expect a column before func whitelist.
         input.parse::<Token![:]>()?;
-        // Finally, parse the functions.
+        // Parse the field_names.
         let content: ParseBuffer;
         parenthesized!(content in input);
         let mut values: Vec<String> = Vec::new();
@@ -38,7 +32,6 @@ impl Parse for WhitelistArgs {
 
         Ok(WhitelistArgs {
             struct_name,
-            field_name,
             values
         })
     }

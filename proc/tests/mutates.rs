@@ -11,13 +11,13 @@ pub struct MyStruct {
 }
 
 impl MyStruct {
-    #[mutates(MyStruct, field: ("self"))]
+    #[mutates(MyStruct: ("field"))]
     pub fn allowed_mutate(&mut self) {
         self.field += 1;
     }
     
     // works even if used several times in a mod
-    #[mutates(MyStruct, field: ("self", "not_listed"))]
+    #[mutates(MyStruct: ("field"))]
     pub fn allowed_mutate_multiple(&mut self) {
         self.field -= 1;
     }
@@ -44,7 +44,7 @@ mod nested_tests {
     use super::*;
     
     #[test]
-    #[mutates(MyStruct, field: ("test_nested_mutate"))]
+    #[mutates(MyStruct: ("field"))]
     fn test_nested_mutate() {
         #[allow(unused_mut)]
         let mut instance = MyStruct::default();
