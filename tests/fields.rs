@@ -37,3 +37,8 @@ struct A {
     y: u32,
 }
 assert_fields_type!(A: x: u32, y: u32);
+assert_fields_type!(A: x: u32);
+
+// TO DO: make this work with tuple structs
+// struct B(A);
+// assert_fields_type!(B: 0: A);
